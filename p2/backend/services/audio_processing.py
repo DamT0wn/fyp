@@ -9,6 +9,7 @@ import librosa
 import numpy as np
 from typing import Dict
 import re
+import shutil
 
 # Load Whisper model (base model for CPU compatibility)
 whisper_model = None
@@ -87,8 +88,30 @@ def extract_audio(video_path: str, audio_path: str):
     """
     Extract audio from video using FFmpeg
     """
+    # Try to find FFmpeg in PATH or use common installation locations
+    ffmpeg_cmd = shutil.which("ffmpeg")
+    
+    if not ffmpeg_cmd:
+        # Try common Windows installation paths
+        possible_paths = [
+            r"C:\Users\tiwar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",
+            r"C:\ffmpeg\bin\ffmpeg.exe",
+            r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                ffmpeg_cmd = path
+                break
+    
+    if not ffmpeg_cmd:
+        raise RuntimeError(
+            "FFmpeg not found. Please install FFmpeg and add it to your system PATH.\n"
+            "Download from: https://ffmpeg.org/download.html"
+        )
+    
     command = [
-        "ffmpeg",
+        ffmpeg_cmd,
         "-i", video_path,
         "-vn",  # No video
         "-acodec", "pcm_s16le",  # PCM codec
@@ -98,7 +121,21 @@ def extract_audio(video_path: str, audio_path: str):
         audio_path
     ]
     
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    try:
+        result = subprocess.run(
+            command, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        )
+    except FileNotFoundError:
+        raise RuntimeError(
+            "FFmpeg not found. Please install FFmpeg and add it to your system PATH.\n"
+            "Download from: https://ffmpeg.org/download.html"
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"FFmpeg failed: {e.stderr.decode()}")
 
 def transcribe_audio(audio_path: str) -> Dict:
     """
