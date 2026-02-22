@@ -1,6 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0B1220;
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background-color: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid #1E293B;
+  }
+  
+  .glass-hover {
+    transition: all 0.3s ease;
+  }
+  
+  .glass-hover:hover {
+    background-color: rgba(31, 41, 55, 0.8);
+    border-color: rgba(30, 41, 59, 0.6);
+  }
+  
+  .card {
+    background-color: #1F2937;
+    border: 1px solid #1E293B;
+  }
+  
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+  
+  .card-hover:hover {
+    background-color: #111827;
+    border-color: rgba(30, 41, 59, 0.6);
+  }
+  
+  .subtle-shadow {
+    box-shadow: 0 4px 24px rgba(11, 18, 32, 0.4);
+  }
+  
+  .professional-glow {
+    box-shadow: 0 2px 16px rgba(98, 125, 152, 0.2);
+  }
+  
+  .card-shadow {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+}
 
 body {
   margin: 0;

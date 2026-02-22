@@ -1,27 +1,23 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Landing from './pages/Landing'
+import LiveInterview from './pages/LiveInterview'
+import Upload from './pages/Upload'
+import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Results from './pages/Results'
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <h1 className="text-2xl font-bold text-blue-600">
-                AI Interview Analyzer
-              </h1>
-            </div>
-          </div>
-        </nav>
-        
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/results/:id" element={<Results />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/live-interview" element={<LiveInterview />} />
+        <Route path="/upload" element={<Upload />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/results/:id" element={<Results />} />
+      </Routes>
     </Router>
   )
 }
