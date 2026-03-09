@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, SkipForward, FileText, Briefcase } from 'lucide-react'
 import { startAIInterview, submitAnswer, completeInterview } from '../api/api'
+import api from '../api/api'
 
 function LiveInterview() {
   const [step, setStep] = useState('setup')
@@ -23,6 +24,7 @@ function LiveInterview() {
   const [totalFramesProcessed, setTotalFramesProcessed] = useState(0)
   const [currentEmotion, setCurrentEmotion] = useState(null)
   const [emotionConfidence, setEmotionConfidence] = useState(0)
+  const [sessionId, setSessionId] = useState(null)
   
   // Results state
   const [overallResults, setOverallResults] = useState(null)
@@ -362,97 +364,35 @@ function LiveInterview() {
             </p>
           </div>
 
-          <form onSubmit={handleStartInterview} className="space-y-6">
-            <div>
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-3">
-                <FileText className="w-4 h-4" />
-                <span>Upload Resume (PDF, DOCX, or TXT)</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.doc,.txt"
-                  onChange={(e) => setResume(e.target.files[0])}
-                  className="block w-full text-sm text-gray-300 file:mr-4 file:py-3 file:px-6
-                    file:rounded-xl file:border-0 file:text-sm file:font-semibold
-                    file:bg-gradient-accent file:text-white hover:file:shadow-xl
-                    file:transition-all file:cursor-pointer
-                    bg-white/5 border border-white/10 rounded-xl p-3
-                    hover:border-blue-500/50 transition-colors cursor-pointer"
-                  required
-                />
-                {resume && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mt-3 flex items-center space-x-2 text-sm text-green-400"
-                  >
-                    <div className="w-2 h-2 bg-green-400 rounded-full" />
-                    <span>{resume.name}</span>
-                  </motion.div>
-                )}
-              </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-3 block">
+              Number of Questions
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {[3, 5, 7].map((num) => (
+                <motion.button
+                  key={num}
+                  type="button"
+                  onClick={() => setNumQuestions(num)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`py-3 px-4 rounded-md font-semibold transition-all ${
+                    numQuestions === num
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {num}
+                </motion.button>
+              ))}
             </div>
-
-            <div>
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-3">
-                <Briefcase className="w-4 h-4" />
-                <span>Job Description</span>
-              </label>
-              <textarea
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                rows={6}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl 
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                  text-white placeholder-gray-500 transition-all resize-none"
-                placeholder="Paste the job description here..."
-                required
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-300 mb-3 block">
-                Number of Questions
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[3, 5, 7].map((num) => (
-                  <motion.button
-                    key={num}
-                    type="button"
-                    onClick={() => setNumQuestions(num)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`py-3 px-4 rounded-xl font-semibold transition-all ${
-                      numQuestions === num
-                        ? 'bg-gradient-accent text-white professional-glow'
-                        : 'glass glass-hover text-gray-300'
-                    }`}
-                  >
-                    {num}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={isGenerating}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-4 px-6 bg-gradient-accent text-white rounded-xl font-semibold 
-                text-lg flex items-center justify-center space-x-2 professional-glow
-                disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <option value={3}>3 Questions</option>
-              <option value={5}>5 Questions</option>
-              <option value={7}>7 Questions</option>
-            </select>
           </div>
-          
-          <button
+
+          <motion.button
             type="submit"
             disabled={isGenerating || !resume || !jobDescription.trim()}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 
               transition-colors duration-200 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
@@ -464,12 +404,7 @@ function LiveInterview() {
             ) : (
               '🚀 Generate Questions & Start Interview'
             )}
-          </button>
-          {(!resume || !jobDescription.trim()) && (
-            <p className="text-sm text-gray-500 text-center mt-2">
-              Please upload your resume and enter job description to continue
-            </p>
-          )}
+          </motion.button>
         </form>
       )}
 
@@ -812,7 +747,6 @@ function LiveInterview() {
                 </div>
               </motion.div>
             )}
-          </div>
 
           {/* Right Panel - User Video */}
           <div className="glass rounded-2xl p-8 border border-white/10">
@@ -829,22 +763,23 @@ function LiveInterview() {
               )}
             </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
-            <p className="text-sm text-gray-700 font-semibold mb-2 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Interview Tips:
-            </p>
-            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-              <li>Look directly at the camera for strong eye contact</li>
-              <li>Position yourself centered in the frame</li>
-              <li>Speak clearly at a natural pace (120-160 words/min)</li>
-              <li>Minimize filler words like "um", "uh", "like"</li>
-              <li>Show natural expressions and maintain good posture</li>
-            </ul>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Interview Tips:
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>Look directly at the camera for strong eye contact</li>
+                <li>Position yourself centered in the frame</li>
+                <li>Speak clearly at a natural pace (120-160 words/min)</li>
+                <li>Minimize filler words like "um", "uh", "like"</li>
+                <li>Show natural expressions and maintain good posture</li>
+              </ul>
+            </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {step === 'results' && overallResults && (

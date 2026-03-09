@@ -12,17 +12,32 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
+// Validate Firebase config
+const isConfigValid = Object.values(firebaseConfig).every(value => value && value !== 'undefined')
+
+if (!isConfigValid) {
+  console.error('Firebase configuration is incomplete. Please check your .env.local file.')
+  console.warn('Firebase Config:', firebaseConfig)
+}
+
 // Initialize Firebase
-const app = initializeApp(firebaseConfig)
+let app
+let auth
 
-// Initialize Firebase Authentication
-const auth = getAuth(app)
-
-// Set persistence to LOCAL so user stays logged in
-setPersistence(auth, browserLocalPersistence)
-  .catch((error) => {
-    console.error('Error setting persistence:', error)
-  })
+try {
+  app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+  
+  // Set persistence to LOCAL so user stays logged in
+  setPersistence(auth, browserLocalPersistence)
+    .catch((error) => {
+      console.error('Error setting persistence:', error)
+    })
+  
+  console.log('Firebase initialized successfully')
+} catch (error) {
+  console.error('Firebase initialization error:', error)
+}
 
 export { auth }
 export default app

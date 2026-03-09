@@ -1,234 +1,525 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, FileText, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import {
+  User,
+  Mail,
+  FileText,
+  LogOut,
+  Menu,
+  X,
+  Edit2,
+  Save,
+  Award,
+  Briefcase,
+  Code,
+  Settings,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  Home,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import EnhancedResumeUpload from '../components/EnhancedResumeUpload';
-import { getCurrentUser } from '../api/api';
+import { useAuth } from '../context/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const [profileData, setProfileData] = useState({
+    fullName: '',
+    jobTitle: '',
+    targetRole: '',
+    experience: '',
+    skills: '',
+  });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [resumeUploaded, setResumeUploaded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('profile');
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadUserProfile();
-  }, []);
+    if (!user) {
+      navigate('/firebase-login');
+      return;
+    }
 
-  const loadUserProfile = async () => {
+    const savedProfile = localStorage.getItem('profileData');
+    if (savedProfile) {
+      setProfileData(JSON.parse(savedProfile));
+    } else {
+      setProfileData((prev) => ({
+        ...prev,
+        fullName: user.displayName || '',
+      }));
+    }
+
+    const resumeStatus = localStorage.getItem('resumeUploaded');
+    setResumeUploaded(resumeStatus === 'true');
+
+    setLoading(false);
+  }, [user, navigate]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
     try {
-      const userData = await getCurrentUser();
-      setUser(userData);
+      localStorage.setItem('profileData', JSON.stringify(profileData));
+      setIsEditing(false);
+      alert('Profile updated successfully!');
     } catch (err) {
-      if (err.response?.status === 401) {
-        navigate('/login');
-      }
+      console.error('Error saving profile:', err);
+      alert('Failed to save profile');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleResumeUploadSuccess = (result) => {
-    // Reload user profile to get updated resume info
-    loadUserProfile();
+  const handleResumeUploadSuccess = () => {
+    setResumeUploaded(true);
+    localStorage.setItem('resumeUploaded', 'true');
   };
 
-  const handleResumeUploadError = (error) => {
-    console.error('Resume upload error:', error);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('profileData');
+      localStorage.removeItem('resumeUploaded');
+      navigate('/firebase-login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
+  const navItems = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'resume', label: 'Resume', icon: FileText },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
+  const stats = [
+    { label: 'Interviews Completed', value: '12', icon: CheckCircle2, color: 'bg-blue-500/20' },
+    { label: 'Total Practice Time', value: '24h', icon: Clock, color: 'bg-green-500/20' },
+    { label: 'Improvement Score', value: '+45%', icon: TrendingUp, color: 'bg-purple-500/20' },
+  ];
+
   return (
-    <div className="min-h-screen bg-dark-900">
-      <Navbar />
-      
-      <div className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">My Profile</h1>
-            <p className="text-gray-400">Manage your account and resume</p>
+    <div className="min-h-screen bg-slate-900">
+      {/* Header */}
+      <div className="bg-slate-800 border-b border-slate-700 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/')}
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2 text-white font-medium"
+            >
+              <Home className="w-5 h-5" />
+              <span className="hidden sm:inline">Home</span>
+            </motion.button>
+            <h1 className="text-2xl font-bold text-white">Profile</h1>
           </div>
-
-          {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-2xl p-8 border border-white/10 mb-6"
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-2 hover:bg-slate-700 rounded-lg transition-colors"
           >
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-gradient-accent rounded-full flex items-center justify-center">
-                  <User className="w-10 h-10 text-white" />
+            {sidebarOpen ? (
+              <X className="w-6 h-6 text-gray-300" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-300" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid md:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`md:col-span-1 ${sidebarOpen ? 'block' : 'hidden md:block'}`}
+          >
+            {/* Profile Card */}
+            <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-6 mb-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4">
+                  {profileData.fullName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase() || 'U'}
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold">{user?.full_name || user?.username}</h2>
-                  <p className="text-gray-400">@{user?.username}</p>
+                <h3 className="text-lg font-bold text-white mb-1">
+                  {profileData.fullName || 'User'}
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">{user?.email}</p>
+                <div className="w-full h-1 bg-slate-700 rounded-full mb-4">
+                  <div
+                    className="h-full bg-blue-600 rounded-full transition-all"
+                    style={{
+                      width: `${
+                        (Object.values(profileData).filter((v) => v).length / 5) * 100
+                      }%`,
+                    }}
+                  ></div>
                 </div>
+                <p className="text-xs text-gray-400 mb-4">
+                  {Math.round(
+                    (Object.values(profileData).filter((v) => v).length / 5) * 100
+                  )}% Complete
+                </p>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/20 transition-all flex items-center space-x-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </motion.button>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
-                <div className="flex items-center space-x-3 glass rounded-lg p-3">
-                  <Mail className="w-5 h-5 text-blue-400" />
-                  <span>{user?.email}</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Member Since</label>
-                <div className="glass rounded-lg p-3">
-                  <span>{new Date(user?.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
+            {/* Navigation */}
+            <nav className="space-y-2 mb-6">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <motion.button
+                    key={item.id}
+                    whileHover={{ x: 4 }}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                      activeTab === item.id
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        : 'text-gray-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                    {activeTab === item.id && (
+                      <ChevronRight className="w-4 h-4 ml-auto" />
+                    )}
+                  </motion.button>
+                );
+              })}
+            </nav>
+
+            {/* Logout Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleLogout}
+              className="w-full px-4 py-3 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 font-medium border border-red-500/30"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Logout</span>
+            </motion.button>
           </motion.div>
 
-          {/* Resume Upload Section */}
+          {/* Main Content */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-12"
+            className="md:col-span-3 space-y-6"
           >
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold mb-2">📄 Resume Management</h2>
-              <p className="text-gray-400">Upload and manage your professional resume</p>
+            {/* Stats */}
+            <div className="grid md:grid-cols-3 gap-4">
+              {stats.map((stat, idx) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-6"
+                  >
+                    <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center mb-4`}>
+                      <Icon className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <p className="text-sm text-gray-400 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  </motion.div>
+                );
+              })}
             </div>
-            
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Upload Component */}
-              <div className="lg:col-span-2">
+
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-8"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white">Profile Information</h2>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all flex items-center gap-2 font-medium border border-blue-500/30"
+                  >
+                    {isEditing ? (
+                      <>
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </>
+                    ) : (
+                      <>
+                        <Edit2 className="w-4 h-4" />
+                        Edit
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+
+                {/* Email Display */}
+                <div className="mb-6 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email Address
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-5 h-5 text-blue-400" />
+                    <span className="text-white">{user?.email}</span>
+                  </div>
+                </div>
+
+                {/* Profile Form */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={profileData.fullName}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="John Doe"
+                      className="w-full px-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-slate-700 disabled:text-gray-400 bg-slate-700 text-white placeholder-gray-500"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">
+                        Current Job Title
+                      </label>
+                      <input
+                        type="text"
+                        name="jobTitle"
+                        value={profileData.jobTitle}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="e.g., Software Engineer"
+                        className="w-full px-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-slate-700 disabled:text-gray-400 bg-slate-700 text-white placeholder-gray-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">
+                        Target Role
+                      </label>
+                      <input
+                        type="text"
+                        name="targetRole"
+                        value={profileData.targetRole}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="e.g., Senior Developer"
+                        className="w-full px-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-slate-700 disabled:text-gray-400 bg-slate-700 text-white placeholder-gray-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">
+                      Years of Experience
+                    </label>
+                    <select
+                      name="experience"
+                      value={profileData.experience}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-slate-700 disabled:text-gray-400 bg-slate-700 text-white"
+                    >
+                      <option value="">Select experience level</option>
+                      <option value="0-1">0-1 years</option>
+                      <option value="1-3">1-3 years</option>
+                      <option value="3-5">3-5 years</option>
+                      <option value="5-10">5-10 years</option>
+                      <option value="10+">10+ years</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">
+                      Key Skills
+                    </label>
+                    <textarea
+                      name="skills"
+                      value={profileData.skills}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="e.g., JavaScript, React, Node.js, Python"
+                      rows="4"
+                      className="w-full px-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-slate-700 disabled:text-gray-400 bg-slate-700 text-white placeholder-gray-500 resize-none"
+                    />
+                  </div>
+
+                  {isEditing && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-5 h-5" />
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </motion.button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Resume Tab */}
+            {activeTab === 'resume' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-8"
+              >
+                <h2 className="text-2xl font-bold text-white mb-2">Resume Management</h2>
+                <p className="text-gray-400 mb-6">
+                  Upload your resume to get personalized interview questions tailored to your experience.
+                </p>
+
                 <EnhancedResumeUpload
                   onUploadSuccess={handleResumeUploadSuccess}
-                  onUploadError={handleResumeUploadError}
+                  onUploadError={(err) => console.error('Resume upload error:', err)}
                 />
-              </div>
 
-              {/* Current Resume Status */}
-              <div>
-                {user?.resume_filename ? (
+                {resumeUploaded && (
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="glass rounded-2xl p-6 border border-green-500/30 h-full"
+                    className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-3"
                   >
-                    <div className="flex items-start space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-green-400">Resume Active</h4>
-                        <p className="text-xs text-gray-500">Ready to use</p>
-                      </div>
+                    <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-green-400">Resume uploaded successfully</p>
+                      <p className="text-sm text-green-300">
+                        Your resume is ready for interview practice
+                      </p>
                     </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-gray-400 font-medium mb-1">Filename</p>
-                        <p className="text-sm text-gray-300 break-all">{user.resume_filename}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-400 font-medium mb-1">Uploaded</p>
-                        <p className="text-sm text-gray-300">
-                          {new Date(user.resume_uploaded_at).toLocaleDateString()}
-                        </p>
-                      </div>
-
-                      {user.resume_text && (
-                        <div>
-                          <p className="text-xs text-gray-400 font-medium mb-2">Preview</p>
-                          <div className="p-3 bg-white/5 rounded border border-white/10 max-h-32 overflow-y-auto">
-                            <p className="text-xs text-gray-500 leading-relaxed">
-                              {user.resume_text.substring(0, 300)}...
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="glass rounded-2xl p-6 border border-yellow-500/30 h-full flex flex-col items-center justify-center text-center"
-                  >
-                    <div className="text-4xl mb-3">📋</div>
-                    <h4 className="font-semibold text-yellow-400 mb-1">No Resume Yet</h4>
-                    <p className="text-xs text-gray-400">
-                      Upload your resume to get started with personalized interview questions
-                    </p>
                   </motion.div>
                 )}
-              </div>
-            </div>
-          </motion.div>
+              </motion.div>
+            )}
 
-          {/* Info Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="glass rounded-xl p-6 border border-white/10"
-            >
-              <div className="text-3xl mb-2">🎯</div>
-              <h3 className="font-semibold mb-2">Personalized Questions</h3>
-              <p className="text-sm text-gray-400">
-                AI generates interview questions based on your resume
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="glass rounded-xl p-6 border border-white/10"
-            >
-              <div className="text-3xl mb-2">📊</div>
-              <h3 className="font-semibold mb-2">Track Progress</h3>
-              <p className="text-sm text-gray-400">
-                Monitor your interview performance over time
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="glass rounded-xl p-6 border border-white/10"
-            >
-              <div className="text-3xl mb-2">🔒</div>
-              <h3 className="font-semibold mb-2">Secure Storage</h3>
-              <p className="text-sm text-gray-400">
-                Your resume is encrypted and kept private
-              </p>
-            </motion.div>
-          </div>
+            {/* Settings Tab */}
+            {activeTab === 'settings' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-8"
+              >
+                <h2 className="text-2xl font-bold text-white mb-6">Settings</h2>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+                    <div>
+                      <p className="font-semibold text-white">Email Notifications</p>
+                      <p className="text-sm text-gray-400">
+                        Receive updates about your interview progress
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+                    <div>
+                      <p className="font-semibold text-white">Performance Analytics</p>
+                      <p className="text-sm text-gray-400">
+                        Share analytics to help improve our AI
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-5 h-5 text-blue-600 rounded cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-600">
+                    <h3 className="font-semibold text-white mb-4">Danger Zone</h3>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-6 py-3 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all font-medium border border-red-500/30"
+                    >
+                      Delete Account
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Action Buttons */}
+            {profileData.fullName && resumeUploaded && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl shadow-sm border border-blue-500/30 p-8 text-center"
+              >
+                <div className="text-4xl mb-4">🎉</div>
+                <h3 className="text-2xl font-bold text-white mb-2">Ready to Practice?</h3>
+                <p className="text-gray-400 mb-6">
+                  Your profile is complete. Start practicing with AI-powered interviews now.
+                </p>
+                <div className="flex gap-4 justify-center flex-wrap">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/live-interview')}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
+                  >
+                    Start AI Interview
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/dashboard')}
+                    className="px-6 py-3 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-600 transition-all border border-slate-600"
+                  >
+                    View Dashboard
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
       </div>
     </div>

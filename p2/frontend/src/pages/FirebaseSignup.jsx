@@ -53,6 +53,7 @@ const FirebaseSignup = () => {
     setLoading(true)
 
     try {
+      console.log('Attempting signup with:', email)
       // Create user account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
@@ -61,9 +62,13 @@ const FirebaseSignup = () => {
         displayName: fullName,
       })
 
-      navigate('/dashboard')
+      console.log('Signup successful:', userCredential.user.email)
+      // Redirect to profile to complete setup
+      navigate('/profile')
     } catch (err) {
-      setError(err.message || 'Signup failed. Please try again.')
+      console.error('Signup error:', err.code, err.message)
+      const errorMessage = getFirebaseErrorMessage(err.code)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -74,14 +79,32 @@ const FirebaseSignup = () => {
     setLoading(true)
 
     try {
+      console.log('Attempting Google signup')
       const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
-      navigate('/dashboard')
+      const result = await signInWithPopup(auth, provider)
+      console.log('Google signup successful:', result.user.email)
+      // Redirect to profile to complete setup
+      navigate('/profile')
     } catch (err) {
-      setError(err.message || 'Google signup failed. Please try again.')
+      console.error('Google signup error:', err.code, err.message)
+      const errorMessage = getFirebaseErrorMessage(err.code)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
+  }
+
+  const getFirebaseErrorMessage = (code) => {
+    const errorMessages = {
+      'auth/email-already-in-use': 'This email is already registered. Please log in instead.',
+      'auth/weak-password': 'Password is too weak. Please use at least 6 characters.',
+      'auth/invalid-email': 'Invalid email address.',
+      'auth/operation-not-allowed': 'Email/password signup is not enabled.',
+      'auth/too-many-requests': 'Too many signup attempts. Please try again later.',
+      'auth/popup-closed-by-user': 'Google signup was cancelled.',
+      'auth/network-request-failed': 'Network error. Please check your connection.',
+    }
+    return errorMessages[code] || err.message || 'Signup failed. Please try again.'
   }
 
   return (

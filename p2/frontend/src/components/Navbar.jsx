@@ -97,7 +97,7 @@ const Navbar = () => {
                 </motion.button>
               </Link>
             ) : (
-              <Link to="/login">
+              <Link to="/firebase-login">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -172,7 +172,7 @@ const Navbar = () => {
                 </button>
               </Link>
             ) : (
-              <Link to="/login" onClick={() => setIsOpen(false)}>
+              <Link to="/firebase-login" onClick={() => setIsOpen(false)}>
                 <button className="w-full px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg font-medium text-sm mb-2">
                   Login
                 </button>

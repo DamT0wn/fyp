@@ -245,7 +245,7 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db)):
                     google_id=google_id,
                     oauth_provider='google',
                     profile_picture=picture,
-                    hashed_password=get_password_hash(os.urandom(32).hex())
+                    hashed_password=get_password_hash("google_oauth_user_no_password")
                 )
                 db.add(user)
                 print(f"   - New user created with username: {username}")

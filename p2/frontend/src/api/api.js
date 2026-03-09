@@ -241,4 +241,64 @@ export const getCurrentUser = async () => {
   })
 }
 
+// AI Interview APIs
+export const startAIInterview = async (resume, jobDescription, numQuestions) => {
+  const formData = new FormData()
+  formData.append('resume', resume)
+  formData.append('job_description', jobDescription)
+  formData.append('num_questions', numQuestions)
+  
+  return retryRequest(async () => {
+    const response = await api.post('/ai-interview/start', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  })
+}
+
+export const submitAnswer = async (sessionId, questionIndex, answerAudio, answerText, answerDuration) => {
+  const formData = new FormData()
+  formData.append('session_id', sessionId)
+  formData.append('question_index', questionIndex)
+  if (answerAudio) {
+    formData.append('answer_audio', answerAudio)
+  }
+  if (answerText) {
+    formData.append('answer_text', answerText)
+  }
+  formData.append('answer_duration', answerDuration)
+  
+  return retryRequest(async () => {
+    const response = await api.post('/ai-interview/submit-answer', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  })
+}
+
+export const completeInterview = async (sessionId) => {
+  return retryRequest(async () => {
+    const response = await api.post('/ai-interview/complete', { session_id: sessionId })
+    return response.data
+  })
+}
+
+export const getAIInterviewSession = async (sessionId) => {
+  return retryRequest(async () => {
+    const response = await api.get(`/ai-interview/session/${sessionId}`)
+    return response.data
+  })
+}
+
+export const getAIInterviewHistory = async () => {
+  return retryRequest(async () => {
+    const response = await api.get('/ai-interview/history')
+    return response.data
+  })
+}
+
 export default api

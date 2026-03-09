@@ -1,11 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, Award, Target, Brain } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
+  const navigate = useNavigate()
+  const { user, loading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/firebase-login')
+    }
+  }, [user, loading, navigate])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
   // Sample data
   const radarData = [
     { subject: 'Confidence', score: 85, fullMark: 100 },

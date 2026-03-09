@@ -110,7 +110,7 @@ const PolishedNavbar = () => {
                 </motion.button>
               </Link>
             ) : (
-              <Link to="/login">
+              <Link to="/firebase-login">
                 <motion.button
                   whileHover={{ scale: 1.05, y: -1 }}
                   whileTap={{ scale: 0.95 }}
@@ -222,7 +222,7 @@ const PolishedNavbar = () => {
                     </motion.button>
                   </Link>
                 ) : (
-                  <Link to="/login" onClick={() => setIsOpen(false)}>
+                  <Link to="/firebase-login" onClick={() => setIsOpen(false)}>
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 text-white rounded-lg font-medium text-sm hover:bg-white/10 transition-all flex items-center justify-center space-x-2"
