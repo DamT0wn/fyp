@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import PremiumLanding from './pages/PremiumLanding'
 import SimpleLanding from './pages/SimpleLanding'
 import FinalLanding from './pages/FinalLanding'
 import EnhancedLanding from './pages/EnhancedLanding'
@@ -23,7 +24,8 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<SimpleLanding />} />
+          <Route path="/" element={<PremiumLanding />} />
+          <Route path="/simple" element={<SimpleLanding />} />
           <Route path="/polished" element={<FinalLanding />} />
           <Route path="/enhanced" element={<EnhancedLanding />} />
           <Route path="/classic" element={<Landing />} />

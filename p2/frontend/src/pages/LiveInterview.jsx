@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Mic, MicOff, VideoOff, Play, Square, SkipForward, ArrowLeft } from 'lucide-react';
+import { Video, Mic, MicOff, VideoOff, Play, Square, SkipForward, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import PolishedNavbar from '../components/PolishedNavbar';
 
 const LiveInterview = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -10,6 +10,8 @@ const LiveInterview = () => {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timer, setTimer] = useState(0);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const videoRef = useRef(null);
   
   // Emotion detection state
@@ -36,6 +38,21 @@ const LiveInterview = () => {
     }
     return () => clearInterval(interval);
   }, [isRecording]);
+
+  // Countdown effect
+  useEffect(() => {
+    let countdownInterval;
+    if (showCountdown && countdown > 0) {
+      countdownInterval = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (showCountdown && countdown === 0) {
+      setShowCountdown(false);
+      setCountdown(3);
+      handleStartRecording();
+    }
+    return () => clearInterval(countdownInterval);
+  }, [showCountdown, countdown]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -140,67 +157,157 @@ const LiveInterview = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900">
-      <Navbar />
+    <div className="min-h-screen bg-slate-950">
+      <PolishedNavbar />
       
       <div className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <Link to="/" className="inline-flex items-center text-gray-400 hover:text-white mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
+            <Link to="/" className="inline-flex items-center text-gray-400 hover:text-white mb-4 group transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+              <span>Home</span>
+              <ChevronRight className="w-4 h-4 mx-2 text-gray-600" />
+              <span>Live Interview</span>
             </Link>
             <h1 className="text-4xl font-bold mb-2">Live AI Interview</h1>
             <p className="text-gray-400">Practice with our AI interviewer in real-time</p>
           </div>
 
-          {/* Main Interview Area */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Left Panel - AI Interviewer */}
+          {/* Countdown Modal */}
+          {showCountdown && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            >
+              <motion.div
+                initial={{ scale: 0.5 }}
+                animate={{ scale: 1 }}
+                className="text-center"
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                  className="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 mb-4"
+                >
+                  {countdown}
+                </motion.div>
+                <p className="text-white text-xl">Get ready...</p>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Main Interview Area - 60/40 Layout */}
+          <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8">
+            {/* Left Panel - AI Interviewer (60%) */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass rounded-2xl p-8 border border-white/10"
+              className="glass rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all"
             >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-accent rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+              {/* AI Avatar with Animated Orb */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-4">
+                  <div className="relative w-16 h-16">
+                    {/* Animated gradient orb */}
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="absolute inset-0 rounded-full bg-white/20 opacity-80"
+                    />
+                    <div className="absolute inset-1 bg-slate-950 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">🤖</span>
+                    </div>
                   </div>
                   <div>
-                    <div className="font-semibold">AI Interviewer</div>
-                    <div className="text-sm text-gray-400">
-                      {isRecording ? 'Listening...' : 'Ready to begin'}
+                    <div className="font-semibold text-white">AI Interviewer</div>
+                    {/* Status Chip */}
+                    <motion.div
+                      className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 mt-1"
+                    >
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        className="w-2 h-2 bg-white rounded-full"
+                      />
+                      <span className="text-xs text-white font-medium">
+                        {isRecording ? 'Listening...' : 'Ready'}
+                      </span>
+                    </motion.div>
+                  </div>
+                </div>
+                {/* Timer with circular progress */}
+                <div className="relative w-20 h-20">
+                  <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#334155" strokeWidth="2" />
+                    <motion.circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="2"
+                      strokeDasharray={`${(timer / 300) * 282.7} 282.7`}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-lg font-mono font-bold text-white">
+                        {Math.floor(timer / 60).toString().padStart(2, '0')}:{(timer % 60).toString().padStart(2, '0')}
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="text-2xl font-mono text-blue-400">{formatTime(timer)}</div>
               </div>
 
-              {/* Question Display */}
-              <div className="glass rounded-xl p-6 mb-6 min-h-[200px] flex items-center">
-                <div>
-                  <div className="text-sm text-gray-400 mb-2">Question {currentQuestion + 1} of {questions.length}</div>
-                  <p className="text-lg text-gray-200 leading-relaxed">
+              {/* Question Card with Typewriter Animation */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={currentQuestion}
+                className="glass rounded-xl p-6 mb-6 min-h-[180px] flex items-center border-l-4 border-white/30 bg-white/5"
+              >
+                <div className="w-full">
+                  {/* Question Badge */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/20 mb-4"
+                  >
+                    <span className="text-xs font-semibold text-white">
+                      Question {currentQuestion + 1} of {questions.length}
+                    </span>
+                  </motion.div>
+                  <p className="text-lg text-white leading-relaxed font-medium">
                     {questions[currentQuestion]}
                   </p>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Progress Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-400 mb-2">
+              {/* Segmented Progress Indicator */}
+              <div className="mb-8">
+                <div className="flex justify-between text-sm text-gray-400 mb-3">
                   <span>Progress</span>
                   <span>{Math.round(((currentQuestion + 1) / questions.length) * 100)}%</span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-accent"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
+                <div className="flex gap-2">
+                  {questions.map((_, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`flex-1 h-2 rounded-full transition-all ${
+                        idx < currentQuestion
+                          ? 'bg-white'
+                          : idx === currentQuestion
+                          ? 'bg-white'
+                          : 'bg-white/10'
+                      }`}
+                      animate={idx === currentQuestion ? { scale: [1, 1.1, 1] } : {}}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    />
+                  ))}
                 </div>
               </div>
 
@@ -210,8 +317,8 @@ const LiveInterview = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={handleStartRecording}
-                    className="flex-1 px-6 py-3 bg-gradient-accent text-white rounded-xl font-semibold flex items-center justify-center space-x-2 professional-glow"
+                    onClick={() => setShowCountdown(true)}
+                    className="flex-1 px-6 py-4 bg-white/10 border border-white/20 text-white rounded-xl font-semibold flex items-center justify-center space-x-2 hover:bg-white/20 transition-all"
                   >
                     <Play className="w-5 h-5" />
                     <span>Start Interview</span>
@@ -223,7 +330,7 @@ const LiveInterview = () => {
                       whileTap={{ scale: 0.95 }}
                       onClick={handleNextQuestion}
                       disabled={currentQuestion === questions.length - 1}
-                      className="flex-1 px-6 py-3 glass glass-hover text-white rounded-xl font-semibold flex items-center justify-center space-x-2 disabled:opacity-50"
+                      className="flex-1 px-6 py-4 glass glass-hover text-white rounded-xl font-semibold flex items-center justify-center space-x-2 disabled:opacity-50 border border-white/10"
                     >
                       <SkipForward className="w-5 h-5" />
                       <span>Next Question</span>
@@ -232,7 +339,7 @@ const LiveInterview = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleStopRecording}
-                      className="flex-1 px-6 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-semibold flex items-center justify-center space-x-2 border border-red-500/20"
+                      className="flex-1 px-6 py-4 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-semibold flex items-center justify-center space-x-2 border border-red-500/20 transition-all"
                     >
                       <Square className="w-5 h-5" />
                       <span>End Interview</span>
@@ -242,20 +349,43 @@ const LiveInterview = () => {
               </div>
             </motion.div>
 
-            {/* Right Panel - User Video */}
+            {/* Right Panel - User Video (40%) */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass rounded-2xl p-8 border border-white/10"
+              className="glass rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all flex flex-col"
             >
               <div className="mb-6">
-                <h3 className="font-semibold mb-2">Your Video</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-white">Your Feed</h3>
+                  {isRecording && (
+                    <motion.div
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ repeat: Infinity, duration: 1 }}
+                      className="flex items-center space-x-2"
+                    >
+                      <div className="w-2 h-2 bg-red-500 rounded-full" />
+                      <span className="text-xs font-medium text-red-400">LIVE</span>
+                    </motion.div>
+                  )}
+                </div>
                 <p className="text-sm text-gray-400">AI is analyzing your responses in real-time</p>
               </div>
 
               {/* Video Preview */}
-              <div className="relative bg-dark-800 rounded-xl overflow-hidden mb-6 aspect-video">
-                {isVideoOff ? (
+              <div className="relative bg-dark-800 rounded-xl overflow-hidden mb-6 aspect-video flex-1 flex items-center justify-center border border-white/10">
+                {!isRecording ? (
+                  <div className="text-center">
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-3"
+                    >
+                      <Video className="w-8 h-8 text-purple-400" />
+                    </motion.div>
+                    <p className="text-gray-400 text-sm">Allow camera access to begin</p>
+                  </div>
+                ) : isVideoOff ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <VideoOff className="w-16 h-16 text-gray-600" />
                   </div>
@@ -267,74 +397,76 @@ const LiveInterview = () => {
                     className="w-full h-full object-cover"
                   />
                 )}
-                
-                {isRecording && (
-                  <div className="absolute top-4 left-4 flex items-center space-x-2 glass px-3 py-2 rounded-lg">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-sm font-medium">Recording</span>
-                  </div>
-                )}
               </div>
 
               {/* Video Controls */}
               <div className="flex space-x-3 mb-6">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setIsMuted(!isMuted)}
-                  className={`flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 transition-all ${
-                    isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'glass glass-hover'
+                  className={`flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 transition-all border ${
+                    isMuted
+                      ? 'bg-red-500/20 text-red-400 border-red-500/20'
+                      : 'glass glass-hover border-white/10'
                   }`}
                 >
                   {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                  <span>{isMuted ? 'Unmute' : 'Mute'}</span>
-                </button>
-                <button
+                  <span className="text-sm">{isMuted ? 'Unmute' : 'Mute'}</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setIsVideoOff(!isVideoOff)}
-                  className={`flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 transition-all ${
-                    isVideoOff ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'glass glass-hover'
+                  className={`flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 transition-all border ${
+                    isVideoOff
+                      ? 'bg-red-500/20 text-red-400 border-red-500/20'
+                      : 'glass glass-hover border-white/10'
                   }`}
                 >
                   {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-                  <span>{isVideoOff ? 'Show Video' : 'Hide Video'}</span>
-                </button>
+                  <span className="text-sm">{isVideoOff ? 'Show' : 'Hide'}</span>
+                </motion.button>
               </div>
 
               {/* Real-time Metrics */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="glass rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-400">
-                    {isRecording ? Math.min(85 + Math.floor(Math.random() * 10), 95) : '--'}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Confidence</div>
-                </div>
-                <div className="glass rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-400">
-                    {isRecording ? Math.min(80 + Math.floor(Math.random() * 15), 95) : '--'}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Clarity</div>
-                </div>
-                <div className="glass rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-pink-400">
-                    {isRecording ? Math.min(82 + Math.floor(Math.random() * 12), 94) : '--'}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">Engagement</div>
-                </div>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {[
+                  { label: 'Eye Contact', value: isRecording ? 'Good' : '--', color: 'blue' },
+                  { label: 'Posture', value: isRecording ? '✓' : '--', color: 'green' },
+                  { label: 'Pace', value: isRecording ? 'Normal' : '--', color: 'purple' },
+                ].map((metric, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className={`glass rounded-lg p-3 text-center border border-white/10 hover:border-white/20 transition-all`}
+                  >
+                    <div className={`text-lg font-bold text-${metric.color}-400`}>
+                      {metric.value}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">{metric.label}</div>
+                  </motion.div>
+                ))}
               </div>
 
-              {/* EMOTION DETECTION BOX - Styled to match website */}
-              <div className="glass rounded-xl p-6 mt-4 border border-white/10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span className="text-2xl">🎭</span>
-                    Emotion Detection
-                  </h3>
+              {/* Emotion Detection Box */}
+              <div className="glass rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-white">Emotion Detection</h3>
                   <div className={`text-xs px-2 py-1 rounded-full ${wsConnected ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
                     {wsConnected ? '● Live' : '● Connecting...'}
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-full bg-gradient-accent flex items-center justify-center text-4xl">
+                    <motion.div
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                      className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl"
+                    >
                       {currentEmotion === 'happy' && '😊'}
                       {currentEmotion === 'sad' && '😢'}
                       {currentEmotion === 'angry' && '😠'}
@@ -343,32 +475,25 @@ const LiveInterview = () => {
                       {currentEmotion === 'disgust' && '🤢'}
                       {currentEmotion === 'neutral' && '😐'}
                       {!currentEmotion && '⏳'}
-                    </div>
+                    </motion.div>
                   </div>
                   
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-sm text-gray-400">Emotion:</span>
-                      <span className="text-lg font-semibold text-white capitalize">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-400 mb-1">
+                      <span className="capitalize font-medium text-white">
                         {currentEmotion || 'Detecting...'}
                       </span>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Confidence:</span>
-                      <span className="text-white font-medium">
-                        {emotionConfidence ? emotionConfidence.toFixed(1) : '0.0'}%
-                      </span>
-                    </div>
-                    
-                    {/* Progress bar */}
-                    <div className="mt-2 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                       <motion.div
-                        className="h-full bg-gradient-accent"
+                        className="h-full bg-white"
                         initial={{ width: 0 }}
                         animate={{ width: `${emotionConfidence || 0}%` }}
                         transition={{ duration: 0.3 }}
                       />
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {emotionConfidence ? emotionConfidence.toFixed(0) : '0'}% confidence
                     </div>
                   </div>
                 </div>
