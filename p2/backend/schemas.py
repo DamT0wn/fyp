@@ -74,6 +74,9 @@ class UserResponse(UserBase):
     phone: Optional[str]
     location: Optional[str]
     is_active: int
+    profile_picture: Optional[str] = None
+    google_id: Optional[str] = None
+    oauth_provider: Optional[str] = None
 
     class Config:
         from_attributes = True
