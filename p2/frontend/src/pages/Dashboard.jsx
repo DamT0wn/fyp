@@ -14,7 +14,7 @@ const Dashboard = () => {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/firebase-login')
+      navigate('/login')
     }
   }, [user, loading, navigate])
 
@@ -309,7 +309,7 @@ const Dashboard = () => {
                 </motion.div>
               ))}
             </div>
-            <Link to="/live-interview">
+            <Link to="/interview-selection">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

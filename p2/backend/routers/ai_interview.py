@@ -53,6 +53,7 @@ async def start_ai_interview(
     resume: UploadFile = File(...),
     job_description: str = Form(...),
     num_questions: int = Form(5),
+    difficulty: str = Form("intermediate"),
     db: Session = Depends(get_db)
 ):
     """
@@ -60,6 +61,11 @@ async def start_ai_interview(
     Upload resume and job description to generate questions
     """
     try:
+        # Validate difficulty level
+        valid_difficulties = ["beginner", "intermediate", "advanced"]
+        if difficulty not in valid_difficulties:
+            difficulty = "intermediate"
+        
         # Validate file type
         if not resume.filename.lower().endswith(('.pdf', '.docx', '.doc', '.txt')):
             raise HTTPException(
@@ -84,11 +90,12 @@ async def start_ai_interview(
                 detail=f"Resume text is too short ({len(resume_text.strip()) if resume_text else 0} characters). Please ensure the file contains readable text."
             )
         
-        # Generate questions
+        # Generate questions with difficulty level
         questions = ai_interviewer.generate_questions(
             resume_text, 
             job_description, 
-            num_questions
+            num_questions,
+            difficulty
         )
         
         # Create session
@@ -100,6 +107,7 @@ async def start_ai_interview(
             job_description=job_description[:2000],
             questions=json.dumps(questions),
             num_questions=len(questions),
+            difficulty=difficulty,
             status="active"
         )
         
@@ -111,7 +119,8 @@ async def start_ai_interview(
             "success": True,
             "session_id": session_id,
             "questions": questions,
-            "num_questions": len(questions)
+            "num_questions": len(questions),
+            "difficulty": difficulty
         }
         
     except HTTPException:

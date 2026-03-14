@@ -32,7 +32,7 @@ python-docx==1.1.0
 python-magic==0.4.27
 
 # Environment
-python-dotenv==1.0.0
+python-dotenv==1.0.1
 
 # Authentication
 python-jose[cryptography]==3.3.0
@@ -40,3 +40,11 @@ passlib[bcrypt]==1.7.4
 google-auth==2.26.2
 google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
+pyotp==2.9.0
+qrcode[pil]==7.4.2
+
+# AI/ML
+google-generativeai
+
+# Email validation
+email-validator

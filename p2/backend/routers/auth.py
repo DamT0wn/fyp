@@ -1,7 +1,7 @@
 """
 Authentication router for user registration, login, and profile management
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import os
@@ -22,6 +22,7 @@ from utils.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from utils.file_validation import FileValidator
+from services.resume_analyzer import ResumeAnalyzer
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -37,9 +38,12 @@ class GoogleLoginRequest(BaseModel):
 @router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
+    print(f"📝 Signup attempt - Email: {user.email}, Username: {user.username}")
+    
     # Check if email already exists
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
+        print(f"❌ Email already exists: {user.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
@@ -48,6 +52,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     # Check if username already exists
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
+        print(f"❌ Username already taken: {user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already taken"
@@ -64,6 +69,8 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    print(f"✅ User created successfully: {user.email}")
     
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -149,7 +156,8 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db)):
             idinfo = id_token.verify_oauth2_token(
                 request.token,
                 requests.Request(),
-                google_client_id
+                google_client_id,
+                clock_skew_in_seconds=10  # Allow 10 seconds clock skew
             )
             print(f"✅ Token verified successfully")
             print(f"   - Subject (google_id): {idinfo.get('sub')}")
@@ -302,10 +310,16 @@ def get_current_user_profile(current_user: User = Depends(get_current_active_use
 @router.post("/upload-resume", response_model=ResumeUploadResponse)
 async def upload_resume(
     file: UploadFile = File(...),
+    field: str = Form(None),  # Accept as Form field, not query param
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Upload and parse user resume with comprehensive validation"""
+    """Upload and parse user resume with comprehensive validation and analysis"""
+    
+    print(f"📤 Resume upload request:")
+    print(f"   - User: {current_user.email}")
+    print(f"   - File: {file.filename}")
+    print(f"   - Field parameter: '{field}' (type: {type(field).__name__})")
     
     # Comprehensive file validation
     await FileValidator.validate_resume(file)
@@ -354,7 +368,36 @@ async def upload_resume(
         # Validate that we extracted some text
         if not resume_text or len(resume_text.strip()) < 50:
             raise Exception("Resume appears to be empty or too short")
+        
+        # VALIDATE IF IT'S ACTUALLY A RESUME
+        is_valid, error_message = ResumeAnalyzer.is_valid_resume(resume_text)
+        if not is_valid:
+            # Clean up file if it's not a valid resume
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=error_message
+            )
+        
+        # ANALYZE RESUME CONTENT
+        print(f"📊 Analyzing resume with field: {field if field else 'None (generic)'}")
+        analysis = ResumeAnalyzer.analyze_resume(resume_text, field)
+        
+        print(f"✅ Resume validated and analyzed:")
+        print(f"   - Field: {field if field else 'Generic'}")
+        print(f"   - Overall Score: {analysis['overall']}/100")
+        print(f"   - Structure: {analysis['structure']}/100")
+        print(f"   - Skills: {analysis['skills']}/100")
+        print(f"   - Experience: {analysis['experience']}/100")
+        print(f"   - Keywords: {analysis['keywords']}/100")
+        if analysis.get('field_specific'):
+            print(f"   - Matched Skills: {analysis['field_specific'].get('matched_count', 0)}")
+            print(f"   - Missing Critical: {len(analysis['field_specific'].get('missing_critical', []))}")
             
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Clean up file if parsing fails
         if os.path.exists(file_path):
@@ -380,10 +423,11 @@ async def upload_resume(
     db.commit()
     
     return {
-        "message": "Resume uploaded successfully",
+        "message": "Resume uploaded and analyzed successfully",
         "filename": filename,
         "resume_text": resume_text[:500] + "..." if len(resume_text) > 500 else resume_text,
-        "uploaded_at": current_user.resume_uploaded_at
+        "uploaded_at": current_user.resume_uploaded_at,
+        "analysis": analysis  # Include the analysis scores
     }
 
 

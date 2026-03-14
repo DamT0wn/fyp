@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = 'http://127.0.0.1:8000/api'
 
 // Create axios instance with default config
 const api = axios.create({
@@ -161,7 +161,7 @@ export const uploadVideo = async (file, onProgress) => {
 }
 
 // Upload resume with validation and progress tracking
-export const uploadResume = async (file, onProgress) => {
+export const uploadResume = async (file, field = null, onProgress) => {
   // Validate file
   const validation = validateFile(file, {
     maxSize: 5 * 1024 * 1024, // 5MB
@@ -180,6 +180,9 @@ export const uploadResume = async (file, onProgress) => {
 
   const formData = new FormData()
   formData.append('file', file)
+  if (field) {
+    formData.append('field', field)
+  }
   
   return retryRequest(async () => {
     const response = await api.post('/auth/upload-resume', formData, {
@@ -299,6 +302,22 @@ export const getAIInterviewHistory = async () => {
     const response = await api.get('/ai-interview/history')
     return response.data
   })
+}
+
+// MFA APIs
+export const setupMFA = async (userId) => {
+  const response = await api.post(`/mfa/setup?user_id=${userId}`)
+  return response.data
+}
+
+export const verifyMFA = async (userId, token) => {
+  const response = await api.post(`/mfa/verify?user_id=${userId}&token=${token}`)
+  return response.data
+}
+
+export const disableMFA = async (userId, token) => {
+  const response = await api.post(`/mfa/disable?user_id=${userId}&token=${token}`)
+  return response.data
 }
 
 export default api

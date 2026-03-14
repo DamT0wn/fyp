@@ -44,7 +44,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/firebase-login');
+      navigate('/login');
       return;
     }
 
@@ -96,7 +96,7 @@ const Profile = () => {
       await signOut(auth);
       localStorage.removeItem('profileData');
       localStorage.removeItem('resumeUploaded');
-      navigate('/firebase-login');
+      navigate('/login');
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -445,6 +445,28 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-white mb-6">Settings</h2>
 
                 <div className="space-y-6">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate('/settings')}
+                    className="w-full p-6 bg-blue-500/10 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition-all text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                          <Settings className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white">Multi-Factor Authentication</p>
+                          <p className="text-sm text-gray-400">
+                            Secure your account with 2FA
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </motion.button>
+
                   <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600">
                     <div>
                       <p className="font-semibold text-white">Email Notifications</p>
@@ -503,7 +525,7 @@ const Profile = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate('/live-interview')}
+                    onClick={() => navigate('/interview-selection')}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
                   >
                     Start AI Interview

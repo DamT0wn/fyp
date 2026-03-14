@@ -22,7 +22,9 @@ const Login = () => {
       const response = await login(email, password);
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      navigate('/dashboard');
+      
+      // Force page reload to update AuthContext
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.');
     } finally {
@@ -35,11 +37,20 @@ const Login = () => {
     setLoading(true);
     try {
       const token = credentialResponse.credential || credentialResponse.id_token;
+      console.log('Google token received:', token ? 'Yes' : 'No');
+      
       const response = await googleLogin(token);
+      console.log('Backend response:', response);
+      
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      navigate('/dashboard');
+      
+      console.log('Navigating to dashboard...');
+      
+      // Force page reload to update AuthContext
+      window.location.href = '/dashboard';
     } catch (err) {
+      console.error('Google login error:', err);
       setError(err.message || 'Google login failed. Please try again.');
     } finally {
       setLoading(false);
@@ -54,7 +65,13 @@ const Login = () => {
         window.google.accounts.id.initialize({
           client_id: googleClientId,
           callback: handleGoogleSuccess,
+          auto_select: false, // Disable auto-select to show account picker
+          cancel_on_tap_outside: false,
         });
+        
+        // Disable One Tap to force button click
+        window.google.accounts.id.cancel();
+        
         window.google.accounts.id.renderButton(googleButtonRef.current, {
           type: 'standard',
           size: 'large',
@@ -236,9 +253,25 @@ const Login = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              ref={googleButtonRef}
-              className="flex justify-center"
-            ></motion.div>
+              className="space-y-3"
+            >
+              <div
+                ref={googleButtonRef}
+                className="flex justify-center"
+              ></div>
+              
+              {/* Account switch hint */}
+              <p className="text-xs text-center text-gray-500">
+                Wrong account? <a 
+                  href="https://accounts.google.com/Logout" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  Sign out of Google
+                </a> first, then try again.
+              </p>
+            </motion.div>
 
             {/* Sign Up Link */}
             <motion.p

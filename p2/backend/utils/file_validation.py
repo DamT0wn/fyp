@@ -2,9 +2,16 @@
 File validation utilities for secure file uploads
 """
 import os
-import magic
 from fastapi import HTTPException, UploadFile
 from typing import List, Optional
+
+# Try to import magic, but make it optional
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+    print("⚠️  Warning: python-magic not available. MIME type validation will be skipped.")
 
 # File size limits (in bytes)
 MAX_RESUME_SIZE = 5 * 1024 * 1024  # 5MB
@@ -68,6 +75,10 @@ class FileValidator:
     @staticmethod
     def validate_mime_type(file_path: str, allowed_types: List[str]) -> None:
         """Validate MIME type using python-magic (checks file content, not just extension)"""
+        if not MAGIC_AVAILABLE:
+            print(f"⚠️  MIME type validation skipped (python-magic not available)")
+            return
+        
         try:
             mime = magic.Magic(mime=True)
             detected_type = mime.from_file(file_path)

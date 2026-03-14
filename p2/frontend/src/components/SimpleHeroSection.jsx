@@ -15,12 +15,13 @@ const SimpleHeroSection = () => {
             {/* Role Tags */}
             <div className="flex flex-wrap gap-2 mb-6 justify-center lg:justify-start">
               {['Software Engineering', 'Data Science', 'Product Management', 'HR Interviews'].map((role) => (
-                <span
+                <Link
                   key={role}
-                  className="px-3 py-1.5 bg-slate-800 text-gray-300 rounded-full text-sm border border-slate-700 hover:border-violet-500 transition-colors"
+                  to="/interview-selection"
+                  className="px-3 py-1.5 bg-slate-800 text-gray-300 rounded-full text-sm border border-slate-700 hover:border-violet-500 hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                   {role}
-                </span>
+                </Link>
               ))}
             </div>
 
@@ -37,7 +38,7 @@ const SimpleHeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-6">
-              <Link to="/live-interview">
+              <Link to="/interview-selection">
                 <button className="w-full sm:w-auto px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2">
                   <Play className="w-5 h-5" />
                   Start Free Session

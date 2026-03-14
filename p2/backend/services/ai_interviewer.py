@@ -131,33 +131,65 @@ class AIInterviewer:
         self, 
         resume_text: str, 
         job_description: str, 
-        num_questions: int = 5
+        num_questions: int = 5,
+        difficulty: str = "intermediate"
     ) -> List[Dict[str, str]]:
         """
         Generate interview questions based on resume and job description
         Uses Gemini API if available, otherwise falls back to rule-based generation
+        
+        Args:
+            resume_text: Candidate's resume content
+            job_description: Job requirements and description
+            num_questions: Number of questions to generate
+            difficulty: Question difficulty level (beginner, intermediate, advanced)
         
         Returns:
             List of question dictionaries with 'question' and 'type' keys
         """
         if self.use_gemini and self.model:
             try:
-                return self._generate_questions_with_gemini(resume_text, job_description, num_questions)
+                return self._generate_questions_with_gemini(resume_text, job_description, num_questions, difficulty)
             except Exception as e:
                 print(f"⚠ Gemini API error: {e}. Falling back to rule-based generation.")
-                return self._generate_questions_fallback(resume_text, job_description, num_questions)
+                return self._generate_questions_fallback(resume_text, job_description, num_questions, difficulty)
         else:
-            return self._generate_questions_fallback(resume_text, job_description, num_questions)
+            return self._generate_questions_fallback(resume_text, job_description, num_questions, difficulty)
     
     def _generate_questions_with_gemini(
         self, 
         resume_text: str, 
         job_description: str, 
-        num_questions: int
+        num_questions: int,
+        difficulty: str = "intermediate"
     ) -> List[Dict[str, str]]:
         """Generate questions using Gemini API"""
-        print(f"🤖 Using Gemini API to generate {num_questions} questions...")
-        prompt = f"""You are an expert technical interviewer. Based on the candidate's resume and the job description, generate {num_questions} relevant interview questions.
+        print(f"🤖 Using Gemini API to generate {num_questions} {difficulty} questions...")
+        
+        # Difficulty-specific instructions
+        difficulty_instructions = {
+            "beginner": """
+- Focus on fundamental concepts and basic terminology
+- Ask about simple, straightforward scenarios
+- Test foundational knowledge without complex problem-solving
+- Use clear, simple language
+- Suitable for entry-level candidates or those new to the field""",
+            "intermediate": """
+- Focus on practical knowledge and real-world applications
+- Include moderate problem-solving scenarios
+- Test understanding of best practices and common patterns
+- Suitable for candidates with 1-3 years of experience""",
+            "advanced": """
+- Focus on complex, real-world scenarios similar to FAANG interviews
+- Include system design and architecture questions
+- Test deep understanding and advanced problem-solving
+- Challenge candidates with edge cases and trade-offs
+- Suitable for senior-level candidates with 3+ years of experience"""
+        }
+        
+        difficulty_instruction = difficulty_instructions.get(difficulty, difficulty_instructions["intermediate"])
+        
+        prompt = f"""You are an expert technical interviewer. Based on the candidate's resume and the job description, generate {num_questions} relevant interview questions at {difficulty.upper()} difficulty level.
 
 Resume:
 {resume_text[:2000]}
@@ -165,11 +197,15 @@ Resume:
 Job Description:
 {job_description[:1000]}
 
+Difficulty Level: {difficulty.upper()}
+{difficulty_instruction}
+
 Generate exactly {num_questions} interview questions that:
-1. Test technical skills mentioned in the resume
-2. Assess fit for the job requirements
-3. Include a mix of technical, behavioral, and role-specific questions
-4. Are clear and specific
+1. Match the {difficulty} difficulty level
+2. Test technical skills mentioned in the resume
+3. Assess fit for the job requirements
+4. Include a mix of technical, behavioral, and role-specific questions
+5. Are clear and specific
 
 Return ONLY a JSON array in this exact format:
 [
@@ -203,42 +239,103 @@ Types can be: "technical", "behavioral", or "role_specific"
                     "topic": q.get("topic", "general")
                 })
         
-        return validated_questions if validated_questions else self._generate_questions_fallback(resume_text, job_description, num_questions)
+        return validated_questions if validated_questions else self._generate_questions_fallback(resume_text, job_description, num_questions, difficulty)
     
     def _generate_questions_fallback(
         self, 
         resume_text: str, 
         job_description: str, 
-        num_questions: int
+        num_questions: int,
+        difficulty: str = "intermediate"
     ) -> List[Dict[str, str]]:
-        """Fallback rule-based question generation"""
+        """Fallback rule-based question generation with difficulty levels"""
         questions = []
         skills = self.extract_skills(resume_text, job_description)
         
         # Extract job role from job description
         role = self._extract_role(job_description)
         
+        # Difficulty-specific question templates
+        difficulty_templates = {
+            "beginner": {
+                "technical": [
+                    "What is {skill} and why is it used?",
+                    "Can you explain the basic concepts of {skill}?",
+                    "What are the main features of {skill}?",
+                    "How would you describe {skill} to someone new?",
+                ],
+                "behavioral": [
+                    "Tell me about your interest in {situation}.",
+                    "What motivated you to learn about {situation}?",
+                    "Describe a simple project where you used {situation}.",
+                ],
+            },
+            "intermediate": {
+                "technical": [
+                    "Can you explain your experience with {skill}?",
+                    "How have you used {skill} in your previous projects?",
+                    "What challenges did you face while working with {skill}?",
+                    "Describe a project where you implemented {skill}.",
+                ],
+                "behavioral": [
+                    "Tell me about a time when you {situation}.",
+                    "How do you handle {situation}?",
+                    "Describe your approach to {situation}.",
+                ],
+            },
+            "advanced": {
+                "technical": [
+                    "How would you architect a system using {skill} at scale?",
+                    "What are the trade-offs when choosing {skill} over alternatives?",
+                    "Explain how you would optimize {skill} for production use.",
+                    "Design a solution using {skill} for a high-traffic application.",
+                ],
+                "behavioral": [
+                    "Describe a complex situation where you {situation} and the impact it had.",
+                    "How would you lead a team through {situation}?",
+                    "Tell me about a time you made a critical decision regarding {situation}.",
+                ],
+            }
+        }
+        
+        templates = difficulty_templates.get(difficulty, difficulty_templates["intermediate"])
+        
         # Generate technical questions based on skills
-        for i, skill in enumerate(skills[:3]):
-            template = self.question_templates["technical"][i % len(self.question_templates["technical"])]
+        tech_count = min(3, len(skills))
+        for i, skill in enumerate(skills[:tech_count]):
+            template = templates["technical"][i % len(templates["technical"])]
             questions.append({
                 "question": template.format(skill=skill.title()),
                 "type": "technical",
-                "topic": skill
+                "topic": skill,
+                "difficulty": difficulty
             })
         
         # Add behavioral question
-        behavioral_situations = [
-            "faced a challenging deadline",
-            "worked in a team with conflicting opinions",
-            "had to learn a new technology quickly"
-        ]
+        behavioral_situations = {
+            "beginner": [
+                "working in a team",
+                "learning new technologies",
+                "solving a technical problem"
+            ],
+            "intermediate": [
+                "faced a challenging deadline",
+                "worked in a team with conflicting opinions",
+                "had to learn a new technology quickly"
+            ],
+            "advanced": [
+                "led a critical project under tight constraints",
+                "made an architectural decision with significant trade-offs",
+                "resolved a major production incident"
+            ]
+        }
+        
+        situations = behavioral_situations.get(difficulty, behavioral_situations["intermediate"])
         questions.append({
-            "question": self.question_templates["behavioral"][0].format(
-                situation=behavioral_situations[0]
-            ),
+            "question": templates["behavioral"][0].format(situation=situations[0]),
             "type": "behavioral",
-            "topic": "teamwork"
+            "topic": "teamwork",
+            "difficulty": difficulty
         })
         
         # Add role-specific question
@@ -246,7 +343,8 @@ Types can be: "technical", "behavioral", or "role_specific"
             questions.append({
                 "question": self.question_templates["role_specific"][0].format(role=role),
                 "type": "role_specific",
-                "topic": "motivation"
+                "topic": "motivation",
+                "difficulty": difficulty
             })
         
         return questions[:num_questions]

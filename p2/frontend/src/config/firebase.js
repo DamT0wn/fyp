@@ -21,22 +21,27 @@ if (!isConfigValid) {
 }
 
 // Initialize Firebase
-let app
-let auth
+let app = null
+let auth = null
 
-try {
-  app = initializeApp(firebaseConfig)
-  auth = getAuth(app)
-  
-  // Set persistence to LOCAL so user stays logged in
-  setPersistence(auth, browserLocalPersistence)
-    .catch((error) => {
-      console.error('Error setting persistence:', error)
-    })
-  
-  console.log('Firebase initialized successfully')
-} catch (error) {
-  console.error('Firebase initialization error:', error)
+// Only initialize if config is valid
+if (isConfigValid) {
+  try {
+    app = initializeApp(firebaseConfig)
+    auth = getAuth(app)
+    
+    // Set persistence to LOCAL so user stays logged in
+    setPersistence(auth, browserLocalPersistence)
+      .catch((error) => {
+        console.error('Error setting persistence:', error)
+      })
+    
+    console.log('Firebase initialized successfully')
+  } catch (error) {
+    console.error('Firebase initialization error:', error)
+  }
+} else {
+  console.warn('Firebase not configured. Firebase authentication features will be disabled.')
 }
 
 export { auth }

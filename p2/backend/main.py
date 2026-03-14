@@ -5,13 +5,17 @@ Handles CORS, routing, and application lifecycle
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response
 import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-from routers import upload, live, results, ai_interview, auth
+# Import routers
+# Temporarily disabled video processing routers due to missing dependencies
+# from routers import upload, live, results, ai_interview, auth, mfa, qr
+from routers import ai_interview, auth, mfa, qr
 from database import engine, Base
 
 # Create database tables
@@ -26,7 +30,12 @@ app = FastAPI(
 # CORS configuration for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,14 +47,21 @@ os.makedirs("temp", exist_ok=True)
 
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["authentication"])
-app.include_router(upload.router, prefix="/api", tags=["upload"])
-app.include_router(live.router, prefix="/api", tags=["live"])
-app.include_router(results.router, prefix="/api", tags=["results"])
+app.include_router(mfa.router, prefix="/api", tags=["mfa"])
+app.include_router(qr.router, prefix="/api", tags=["qr"])
+# Temporarily disabled video processing routers
+# app.include_router(upload.router, prefix="/api", tags=["upload"])
+# app.include_router(live.router, prefix="/api", tags=["live"])
+# app.include_router(results.router, prefix="/api", tags=["results"])
 app.include_router(ai_interview.router, prefix="/api", tags=["ai-interview"])
 
 @app.get("/")
 def read_root():
     return {"message": "Intrex API", "status": "running"}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
 
 @app.get("/health")
 def health_check():

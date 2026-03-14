@@ -11,6 +11,22 @@ export const AuthProvider = ({ children }) => {
   const [isNewUser, setIsNewUser] = useState(false)
 
   useEffect(() => {
+    // Check for existing token in localStorage (backend JWT)
+    const storedToken = localStorage.getItem('token')
+    const storedUser = localStorage.getItem('user')
+    
+    if (storedToken && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser)
+        console.log('User loaded from localStorage:', userData.email)
+        setUser(userData)
+        setLoading(false)
+        return
+      } catch (err) {
+        console.error('Error parsing stored user:', err)
+      }
+    }
+    
     if (!auth) {
       console.error('Firebase auth not initialized')
       setError('Firebase authentication not available')
@@ -18,7 +34,7 @@ export const AuthProvider = ({ children }) => {
       return
     }
 
-    // Listen for auth state changes
+    // Listen for auth state changes (Firebase)
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {

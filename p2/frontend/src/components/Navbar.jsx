@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, Menu, X, User, LogIn } from 'lucide-react';
+import { Sparkles, Menu, X, User, LogIn, Settings } from 'lucide-react';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,9 +55,9 @@ const Navbar = () => {
               Home
             </Link>
             <Link
-              to="/live-interview"
+              to="/interview-selection"
               className={`text-sm font-medium transition-colors flex items-center space-x-2 ${
-                isActive('/live-interview') ? 'text-white' : 'text-gray-400 hover:text-white'
+                isActive('/interview-selection') ? 'text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
               <span>Live Interview</span>
@@ -66,12 +66,12 @@ const Navbar = () => {
               </span>
             </Link>
             <Link
-              to="/live-interview"
+              to="/interview-selection"
               className={`text-sm font-medium transition-colors ${
-                isActive('/live-interview') ? 'text-white' : 'text-gray-400 hover:text-white'
+                isActive('/interview-selection') ? 'text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
-              Live Interview
+              Interviews
             </Link>
             <Link
               to="/dashboard"
@@ -81,6 +81,16 @@ const Navbar = () => {
             >
               Dashboard
             </Link>
+            {isLoggedIn && (
+              <Link
+                to="/settings"
+                className={`text-sm font-medium transition-colors ${
+                  isActive('/settings') ? 'text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Settings
+              </Link>
+            )}
           </div>
 
           {/* CTA Buttons */}
@@ -108,7 +118,7 @@ const Navbar = () => {
                 </motion.button>
               </Link>
             )}
-            <Link to="/live-interview">
+            <Link to="/interview-selection">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -152,11 +162,11 @@ const Navbar = () => {
               Interviews
             </Link>
             <Link
-              to="/live-interview"
+              to="/interview-selection"
               className="block text-sm font-medium text-gray-400 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
-              Live Interview
+              Interviews
             </Link>
             <Link
               to="/dashboard"
@@ -165,6 +175,15 @@ const Navbar = () => {
             >
               Dashboard
             </Link>
+            {isLoggedIn && (
+              <Link
+                to="/settings"
+                className="block text-sm font-medium text-gray-400 hover:text-white"
+                onClick={() => setIsOpen(false)}
+              >
+                Settings
+              </Link>
+            )}
             {isLoggedIn ? (
               <Link to="/profile" onClick={() => setIsOpen(false)}>
                 <button className="w-full px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg font-medium text-sm mb-2">
@@ -178,7 +197,7 @@ const Navbar = () => {
                 </button>
               </Link>
             )}
-            <Link to="/live-interview" onClick={() => setIsOpen(false)}>
+            <Link to="/interview-selection" onClick={() => setIsOpen(false)}>
               <button className="w-full px-6 py-2 bg-gradient-accent text-white rounded-lg font-medium text-sm">
                 Start Interview
               </button>

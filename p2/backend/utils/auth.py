@@ -8,10 +8,26 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+import base64
+
+def encode_secret(secret: str):
+    return base64.b64encode(secret.encode()).decode()
+
+def decode_secret(encoded: str):
+    return base64.b64decode(encoded).decode()
 
 from database import get_db
 from models import User
 from schemas import TokenData
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    token = credentials.credentials
 
 # Security configuration
 SECRET_KEY = "your-secret-key-change-this-in-production"  # Change in production!
@@ -28,12 +44,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password. Truncates to 72 bytes if necessary (bcrypt limit)"""
-    # bcrypt has a 72-byte limit for passwords
-    if isinstance(password, str):
-        password = password.encode('utf-8')
+    """Hash a password. Truncates to 72 chars (bcrypt limit)"""
+    
+    # bcrypt limit
     if len(password) > 72:
         password = password[:72]
+
     return pwd_context.hash(password)
 
 
@@ -49,25 +65,36 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
     """Get the current authenticated user from JWT token"""
+
+    token = credentials.credentials
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+
         if email is None:
             raise credentials_exception
+
         token_data = TokenData(email=email)
+
     except JWTError:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.email == token_data.email).first()
+
     if user is None:
         raise credentials_exception
+
     return user
 
 
