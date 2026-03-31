@@ -8,7 +8,8 @@ function AudioRecorder({
   isRecording, 
   onStartRecording, 
   onStopRecording,
-  enableTranscription = true
+  enableTranscription = true,
+  autoStart = false
 }) {
   const [audioLevel, setAudioLevel] = useState(0)
   const [recordingDuration, setRecordingDuration] = useState(0)
@@ -238,6 +239,13 @@ function AudioRecorder({
     return cleanup
   }, [])
 
+  // Auto-start recording when TTS finishes
+  useEffect(() => {
+    if (autoStart && !isRecording) {
+      startRecording()
+    }
+  }, [autoStart])
+
   return (
     <div className="space-y-4">
       {/* Transcription Status */}
@@ -251,7 +259,7 @@ function AudioRecorder({
               flex items-center gap-2 text-sm"
           >
             <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-            <span>Transcribing audio with Gemini AI...</span>
+            <span>Transcribing audio...</span>
           </motion.div>
         )}
         
