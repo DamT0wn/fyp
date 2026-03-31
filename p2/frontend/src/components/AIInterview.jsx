@@ -36,6 +36,7 @@ function AIInterview() {
   const navigate = useNavigate()
   const [step, setStep] = useState('upload') // upload, mic-check, interview, analyzing, results
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [ttsReady, setTtsReady] = useState(false) // true only after TTS finishes for current question
   const [sessionId, setSessionId] = useState(null)
   const [questions, setQuestions] = useState([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -167,6 +168,7 @@ function AIInterview() {
       const q = questions[currentQuestionIndex]
       if (q?.question) {
         setIsSpeaking(true)
+        setTtsReady(false)
         const utterance = new SpeechSynthesisUtterance(q.question)
         utterance.rate = 0.92
         utterance.pitch = 1
@@ -175,8 +177,8 @@ function AIInterview() {
         const preferred = voices.find(v => v.lang.startsWith('en') && v.localService)
           || voices.find(v => v.lang.startsWith('en'))
         if (preferred) utterance.voice = preferred
-        utterance.onend = () => setIsSpeaking(false)
-        utterance.onerror = () => setIsSpeaking(false)
+        utterance.onend = () => { setIsSpeaking(false); setTtsReady(true) }
+        utterance.onerror = () => { setIsSpeaking(false); setTtsReady(true) }
         window.speechSynthesis?.cancel()
         window.speechSynthesis?.speak(utterance)
       }
@@ -184,6 +186,7 @@ function AIInterview() {
     return () => {
       window.speechSynthesis?.cancel()
       setIsSpeaking(false)
+      setTtsReady(false)
     }
   }, [step, currentQuestionIndex, questions])
 
@@ -861,8 +864,9 @@ function AIInterview() {
               questionId={getCurrentQuestionId()}
               onRecordingComplete={handleRecordingComplete}
               isRecording={isRecording}
-              onStartRecording={() => setIsRecording(true)}
+              onStartRecording={() => { setIsRecording(true); setTtsReady(false) }}
               onStopRecording={() => setIsRecording(false)}
+              autoStart={ttsReady}
             />
             
             {/* Submit Section */}

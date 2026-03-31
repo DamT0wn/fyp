@@ -462,3 +462,30 @@ async def get_interview_history(db: Session = Depends(get_db)):
     
     return {"sessions": results}
 
+
+@router.post("/transcribe")
+async def transcribe_audio_endpoint(
+    audio: UploadFile = File(...)
+):
+    """
+    Transcribe an audio blob using local Whisper model.
+    Accepts any audio format (webm, mp4, ogg, wav).
+    """
+    temp_path = None
+    try:
+        suffix = os.path.splitext(audio.filename or "audio.webm")[1] or ".webm"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await audio.read())
+            temp_path = tmp.name
+
+        result = transcribe_audio(temp_path)
+        transcript = result.get("text", "").strip()
+
+        return {"transcript": transcript, "success": True}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
